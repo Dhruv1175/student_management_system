@@ -149,8 +149,14 @@ const Icons = {
       <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
     </svg>
   ),
+  Menu: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="3" y1="12" x2="21" y2="12" strokeWidth="2.5" />
+      <line x1="3" y1="6" x2="21" y2="6" strokeWidth="2.5" />
+      <line x1="3" y1="18" x2="21" y2="18" strokeWidth="2.5" />
+    </svg>
+  ),
 };
-
 
 function InputField({ label, id, type = 'text', value, placeholder, error, onChange, accept }) {
   return (
@@ -187,7 +193,7 @@ function ConfirmDialog({ open, studentName, onCancel, onConfirm }) {
       <div style={styles.dialog}>
         <div style={styles.dialogIcon}><Icons.Trash /></div>
         <h3 style={{ color: '#111827' }}>Delete this record?</h3>
-        <p style={{ color: '#4B5563' }}>&ldquo;{studentName}&rdquo; will be permanently removed.</p>
+        <p style={{ color: '#4B5563', margin: '8px 0 20px' }}>&ldquo;{studentName}&rdquo; will be permanently removed.</p>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
           <button style={styles.btnSecondary} onClick={onCancel}>Cancel</button>
           <button style={styles.btnDanger} onClick={onConfirm}>Delete</button>
@@ -208,16 +214,15 @@ function Drawer({ open, mode, form, errors, globalError, onClose, onChange, onGe
     >
       <div style={{ ...styles.drawer, transform: open ? 'translateX(0)' : 'translateX(100%)' }}>
         <div style={styles.drawerHeader}>
-          <h2 style={{ color: '#111827' }}>{isEdit ? 'Edit Student' : 'Add Student'}</h2>
+          <h2 style={{ color: '#111827', fontSize: '20px', fontWeight: 600 }}>{isEdit ? 'Edit Student' : 'Add Student'}</h2>
           <button style={styles.closeBtn} onClick={onClose}>✕</button>
         </div>
         <div style={styles.drawerBody}>
           {globalError && <div style={styles.globalError}>{globalError}</div>}
 
-          {/* Photo upload */}
           <div style={{ marginBottom: 16 }}>
             <label style={styles.label}>Student Photo</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
               <div style={styles.photoPreview}>
                 {photoPreview ? (
                   <img src={photoPreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -225,12 +230,12 @@ function Drawer({ open, mode, form, errors, globalError, onClose, onChange, onGe
                   <span style={{ color: '#9CA3AF', fontSize: 12 }}>No photo</span>
                 )}
               </div>
-              <div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: '160px', flex: 1 }}>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={(e) => onPhotoChange(e.target.files[0])}
-                  style={{ fontSize: 12, color: '#111827' }}
+                  style={{ fontSize: 12, color: '#111827', width: '100%' }}
                 />
                 {photoPreview && (
                   <button style={styles.removePhotoBtn} onClick={onRemovePhoto}>Remove</button>
@@ -257,14 +262,14 @@ function Drawer({ open, mode, form, errors, globalError, onClose, onChange, onGe
 
           <div style={{ marginBottom: 16 }}>
             <label style={styles.label}>Gender</label>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {GENDERS.map(g => (
                 <label
                   key={g}
                   style={{ ...styles.radioOption, ...(form.gender === g ? styles.radioSelected : {}) }}
                   onClick={() => onGender(g)}
                 >
-                  <input type="radio" name="gender" value={g} readOnly checked={form.gender === g} />
+                  <input type="radio" name="gender" value={g} readOnly checked={form.gender === g} style={{ display: 'none' }} />
                   {g}
                 </label>
               ))}
@@ -302,6 +307,7 @@ export default function App() {
   const [totalItems, setTotalItems] = useState(0);
   const [search, setSearch] = useState('');
   const [course, setCourse] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [mode, setMode] = useState('create');
@@ -391,6 +397,7 @@ export default function App() {
   const handleSave = async () => {
     const { valid, errors: errs } = validate(form);
     if (!valid) { setErrors(errs); return; }
+    if (saving) return;
     setSaving(true); setGlobalError('');
 
     try {
@@ -450,12 +457,12 @@ export default function App() {
   };
 
   const renderPhotoThumb = (photo) => {
-    if (!photo) return <span style={{ color: '#9CA3AF', fontSize: 12 }}>—</span>;
+    if (!photo) return <div style={styles.tableAvatarFallback}>—</div>;
     return (
       <img
         src={`${API.defaults.baseURL}/uploads/${photo}`}
         alt="student"
-        style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }}
+        style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', display: 'block' }}
         onError={(e) => { e.target.style.display = 'none'; }}
       />
     );
@@ -465,57 +472,82 @@ export default function App() {
     <>
       <style>{`
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #F0F2F5; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
-        .app { display: flex; min-height: 100vh; }
-        .sidebar { width: 260px; background: linear-gradient(180deg, #1E1B4B 0%, #312E81 100%); padding: 24px 16px; color: #fff; position: fixed; top: 0; left: 0; height: 100%; overflow-y: auto; z-index: 30; }
+        body { background: #F0F2F5; font-family: 'Inter', system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+        .app { display: flex; min-height: 100vh; position: relative; }
+        .sidebar { width: 260px; background: linear-gradient(180deg, #1E1B4B 0%, #312E81 100%); padding: 24px 16px; color: #fff; position: fixed; top: 0; left: 0; height: 100%; overflow-y: auto; z-index: 100; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .sidebar .logo { font-size: 20px; font-weight: 700; margin-bottom: 32px; letter-spacing: -0.5px; display: flex; align-items: center; gap: 10px; }
         .sidebar .logo span { background: #818CF8; padding: 2px 8px; border-radius: 6px; font-size: 12px; }
         .sidebar nav a { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 10px; color: #C7D2FE; text-decoration: none; transition: 0.2s; margin-bottom: 2px; font-size: 14px; }
         .sidebar nav a:hover, .sidebar nav a.active { background: rgba(255,255,255,0.08); color: #fff; }
         .sidebar nav a.active { background: rgba(255,255,255,0.12); box-shadow: 0 0 0 1px rgba(255,255,255,0.05); }
-        .main { margin-left: 260px; flex: 1; padding: 24px 32px; }
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 90; cubic-bezier(0.4, 0, 0.2, 1); }
+        .main { margin-left: 260px; flex: 1; padding: 24px 32px; min-width: 0; width: 100%; }
         .main, .main * { color: #111827; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+        .navbar-mobile { display: none; background: #fff; border-bottom: 1px solid #E5E7EB; padding: 12px 16px; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 40; }
+        .navbar-mobile .logo-mobile { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; color: #1E1B4B; }
+        .navbar-mobile .menu-toggle { background: none; border: none; cursor: pointer; color: #4B5563; padding: 4px; display: flex; align-items: center; justify-content: center; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; gap: 16px; }
         .header h1 { font-size: 26px; font-weight: 600; color: #111827; }
-        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 28px; }
         .stat-card { background: #fff; padding: 20px 18px; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #E5E7EB; transition: 0.2s; }
         .stat-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.06); }
         .stat-card .label { font-size: 12px; font-weight: 500; color: #6B7280; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; }
         .stat-card .value { font-size: 28px; font-weight: 700; color: #111827; margin-top: 4px; }
-        .toolbar { display: flex; gap: 12px; flex-wrap: wrap; background: #fff; padding: 12px 20px; border-radius: 16px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #E5E7EB; }
-        .toolbar input, .toolbar select { padding: 8px 14px; border: 1px solid #D1D5DB; border-radius: 10px; font-size: 14px; background: #F9FAFB; transition: 0.2s; color: #111827; }
+        .toolbar { display: flex; gap: 12px; background: #fff; padding: 12px 20px; border-radius: 16px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #E5E7EB; align-items: center; }
+        .toolbar input, .toolbar select { padding: 10px 14px; border: 1px solid #D1D5DB; border-radius: 10px; font-size: 14px; background: #F9FAFB; transition: 0.2s; color: #111827; height: 42px; }
+        .toolbar input { flex: 1; min-width: 200px; }
+        .toolbar select { min-width: 160px; }
         .toolbar input::placeholder { color: #6B7280; }
-        .toolbar input:focus, .toolbar select:focus { outline: none; border-color: #4F46E5; box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+        .toolbar input:focus, .toolbar select:focus { outline: none; border-color: #4F46E5; box-shadow: 0 0 0 3px rgba(79,70,229,0.1); background: #fff; }
         .table-wrap { background: #fff; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #E5E7EB; overflow: hidden; }
         .table-wrap table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        .table-wrap th { background: #F9FAFB; padding: 14px 18px; text-align: left; font-weight: 500; color: #4B5563; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #E5E7EB; }
-        .table-wrap td { padding: 14px 18px; border-bottom: 1px solid #F3F4F6; color: #111827; }
+        .table-wrap th { background: #F9FAFB; padding: 14px 18px; text-align: left; font-weight: 500; color: #4B5563; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #E5E7EB; white-space: nowrap; }
+        .table-wrap td { padding: 14px 18px; border-bottom: 1px solid #F3F4F6; color: #111827; vertical-align: middle; white-space: nowrap; }
         .table-wrap tbody tr:hover { background: #F8FAFC; }
         .badge { display: inline-block; padding: 2px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; background: #EEF2FF; color: #4F46E5; }
         .actions { display: flex; gap: 6px; }
-        .actions button { background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 8px; transition: 0.2s; font-size: 15px; color: #4B5563; }
+        .actions button { background: none; border: none; cursor: pointer; padding: 6px; border-radius: 8px; transition: 0.2s; font-size: 15px; color: #4B5563; display: inline-flex; align-items: center; justify-content: center; }
         .actions .edit:hover { background: #EEF2FF; color: #4F46E5; }
         .actions .delete:hover { background: #FEF2F2; color: #EF4444; }
-        .pagination { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-top: 1px solid #E5E7EB; flex-wrap: wrap; gap: 8px; color: #111827; }
-        .pagination button { padding: 6px 16px; border: 1px solid #D1D5DB; border-radius: 10px; background: #fff; cursor: pointer; transition: 0.2s; font-size: 13px; color: #111827; }
+        .pagination { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-top: 1px solid #E5E7EB; flex-wrap: wrap; gap: 12px; color: #111827; }
+        .pagination button { padding: 8px 16px; border: 1px solid #D1D5DB; border-radius: 10px; background: #fff; cursor: pointer; transition: 0.2s; font-size: 13px; color: #111827; font-weight: 500; }
         .pagination button:hover:not(:disabled) { background: #F3F4F6; border-color: #9CA3AF; }
         .pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
-        @media (max-width: 768px) {
-          .sidebar { transform: translateX(-100%); position: fixed; width: 240px; }
+
+        @media (max-width: 1024px) {
+          .sidebar { transform: translateX(-100%); }
           .sidebar.open { transform: translateX(0); }
-          .main { margin-left: 0; padding: 16px; }
-          .stats { grid-template-columns: 1fr 1fr; }
-          .header { flex-direction: column; align-items: stretch; gap: 12px; }
+          .sidebar-overlay.open { display: block; }
+          .main { margin-left: 0; padding: 20px 16px; }
+          .navbar-mobile { display: flex; }
         }
+
+        @media (max-width: 768px) {
+          .header { flex-direction: row; align-items: center; }
+          .header h1 { font-size: 22px; }
+          .stats { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+          .stat-card { padding: 16px 14px; }
+          .stat-card .value { font-size: 24px; }
+          .toolbar { flex-direction: column; align-items: stretch; padding: 12px; gap: 10px; }
+          .toolbar input, .toolbar select { width: 100%; min-width: 0; }
+          .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 12px; }
+          .table-wrap td, .table-wrap th { padding: 12px 14px; }
+        }
+
         @media (max-width: 480px) {
+          .header { flex-direction: column; align-items: stretch; gap: 12px; margin-bottom: 20px; }
+          .header button { width: 100%; justify-content: center; }
           .stats { grid-template-columns: 1fr; }
-          .toolbar { flex-direction: column; }
-          .table-wrap { overflow-x: auto; }
+          .pagination { flex-direction: column; align-items: center; text-align: center; }
+          .pagination div { width: 100%; display: flex; justify-content: space-between; }
+          .pagination button { flex: 1; text-align: center; }
         }
       `}</style>
 
       <div className="app">
-        <aside className="sidebar" id="sidebar">
+        <div className={`sidebar-overlay ${sidebarOpen ? 'open' : ''}`} onClick={() => setSidebarOpen(false)} />
+        
+        <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`} id="sidebar">
           <div className="logo">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 10v6M2 10l10-5 10 5-10 5-10-5z" />
@@ -524,20 +556,33 @@ export default function App() {
             EduStream <span>v2</span>
           </div>
           <nav>
-            <a href="#" className="active"><Icons.Dashboard /> Dashboard</a>
-            <a href="#"><Icons.Students /> Students</a>
-            <a href="#"><Icons.Courses /> Courses</a>
-            <a href="#"><Icons.Analytics /> Analytics</a>
-            <a href="#"><Icons.Settings /> Settings</a>
+            <a href="#" className="active" onClick={() => setSidebarOpen(false)}><Icons.Dashboard /> Dashboard</a>
+            <a href="#" onClick={() => setSidebarOpen(false)}><Icons.Students /> Students</a>
+            <a href="#" onClick={() => setSidebarOpen(false)}><Icons.Courses /> Courses</a>
+            <a href="#" onClick={() => setSidebarOpen(false)}><Icons.Analytics /> Analytics</a>
+            <a href="#" onClick={() => setSidebarOpen(false)}><Icons.Settings /> Settings</a>
           </nav>
           <div style={{ marginTop: 'auto', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-            <a href="#" style={{ color: '#C7D2FE', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '8px', fontSize: '13px', textDecoration: 'none' }}>
+            <a href="#" style={{ color: '#C7D2FE', display: 'flex', alignMern: 'center', gap: '8px', padding: '8px 12px', borderRadius: '8px', fontSize: '13px', textDecoration: 'none' }}>
               <Icons.Logout /> Sign out
             </a>
           </div>
         </aside>
 
         <div className="main">
+          <header className="navbar-mobile">
+            <div className="logo-mobile">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 10v6M2 10l10-5 10 5-10 5-10-5z" />
+                <path d="M6 12v5c3 3 9 3 12 0v-5" />
+              </svg>
+              EduStream
+            </div>
+            <button className="menu-toggle" onClick={() => setSidebarOpen(true)}>
+              <Icons.Menu />
+            </button>
+          </header>
+
           <div className="header">
             <h1>Student Records</h1>
             <button style={styles.btnPrimary} onClick={openCreate}>
@@ -561,7 +606,7 @@ export default function App() {
           </div>
 
           <div className="toolbar">
-            <input type="text" placeholder="Search by name…" value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={handleSearchKey} style={{ flex: 1, minWidth: '150px' }} />
+            <input type="text" placeholder="Search by name…" value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={handleSearchKey} />
             <select value={course} onChange={handleCourseChange}>
               <option value="">All Courses</option>
               {COURSES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -584,12 +629,12 @@ export default function App() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan="8" style={{ textAlign: 'center', padding: '40px' }}>⏳ Loading...</td></tr>
+                  <tr><td colSpan="8" style={{ textAlign: 'center', padding: '40px', color: '#6B7280' }}>⏳ Loading...</td></tr>
                 ) : students.length === 0 ? (
-                  <tr><td colSpan="8" style={{ textAlign: 'center', padding: '40px' }}>📭 No students found.</td></tr>
+                  <tr><td colSpan="8" style={{ textAlign: 'center', padding: '40px', color: '#6B7280' }}>📭 No students found.</td></tr>
                 ) : students.map(s => (
                   <tr key={s.id}>
-                    <td style={{ fontFamily: 'monospace', fontSize: '13px' }}>{s.admission_number}</td>
+                    <td style={{ fontFamily: 'monospace', fontSize: '13px', color: '#4B5563' }}>{s.admission_number}</td>
                     <td>{renderPhotoThumb(s.photo)}</td>
                     <td><strong>{s.name}</strong></td>
                     <td><span className="badge">{s.course}</span></td>
@@ -607,9 +652,9 @@ export default function App() {
               </tbody>
             </table>
             <div className="pagination">
-              <span>Page {page} of {totalPages}</span>
+              <span style={{ fontSize: '14px', color: '#4B5563' }}>Page {page} of {totalPages}</span>
               <div>
-                <button disabled={page <= 1 || loading} onClick={() => setPage(p => p - 1)}>← Prev</button>
+                <button disabled={page <= 1 || loading} onClick={() => setPage(p => p - 1)} style={{ marginRight: 8 }}>← Prev</button>
                 <button disabled={page >= totalPages || loading} onClick={() => setPage(p => p + 1)}>Next →</button>
               </div>
             </div>
@@ -644,29 +689,29 @@ export default function App() {
   );
 }
 
-// ---------- Styles ----------
 const styles = {
   btnPrimary: {
-    display: 'flex',
+    display: 'inline-flex',
     alignItems: 'center',
     gap: '6px',
     background: '#4F46E5',
     color: '#fff',
     border: 'none',
-    padding: '10px 24px',
+    padding: '10px 20px',
     borderRadius: '10px',
     fontWeight: 500,
     fontSize: '14px',
     cursor: 'pointer',
     transition: 'background 0.2s, transform 0.1s',
     fontFamily: 'inherit',
-    boxShadow: '0 2px 8px rgba(79,70,229,0.3)',
+    boxShadow: '0 2px 8px rgba(79,70,229,0.25)',
+    whiteSpace: 'nowrap',
   },
   btnSecondary: {
-    background: '#F3F4F6',
+    background: '#fff',
     color: '#111827',
     border: '1px solid #D1D5DB',
-    padding: '8px 20px',
+    padding: '10px 20px',
     borderRadius: '10px',
     fontWeight: 500,
     fontSize: '14px',
@@ -677,21 +722,20 @@ const styles = {
     background: '#EF4444',
     color: '#fff',
     border: 'none',
-    padding: '8px 20px',
+    padding: '10px 20px',
     borderRadius: '10px',
     fontWeight: 500,
     fontSize: '14px',
     cursor: 'pointer',
     fontFamily: 'inherit',
-    boxShadow: '0 2px 8px rgba(239,68,68,0.25)',
+    boxShadow: '0 2px 8px rgba(239,68,68,0.2)',
   },
-
   label: {
     display: 'block',
     fontSize: '13px',
     fontWeight: 500,
     color: '#374151',
-    marginBottom: '4px',
+    marginBottom: '6px',
   },
   input: {
     width: '100%',
@@ -719,6 +763,7 @@ const styles = {
     color: '#111827',
     outline: 'none',
     fontFamily: 'inherit',
+    height: '42px',
   },
   errorText: {
     fontSize: '12px',
@@ -726,29 +771,30 @@ const styles = {
     marginTop: '4px',
     display: 'block',
   },
-
   radioOption: {
     flex: 1,
+    minWidth: '75px',
     border: '1px solid #D1D5DB',
     borderRadius: '10px',
-    padding: '8px 12px',
+    padding: '10px 12px',
     textAlign: 'center',
     cursor: 'pointer',
     transition: 'all 0.2s',
     fontSize: '14px',
     color: '#111827',
     background: '#fff',
+    userSelect: 'none',
   },
   radioSelected: {
     borderColor: '#4F46E5',
     background: '#EEF2FF',
     color: '#4F46E5',
     fontWeight: 500,
+    boxShadow: '0 0 0 1px #4F46E5',
   },
-
   photoPreview: {
-    width: 80,
-    height: 80,
+    width: 72,
+    height: 72,
     borderRadius: '50%',
     overflow: 'hidden',
     background: '#F3F4F6',
@@ -764,18 +810,18 @@ const styles = {
     color: '#EF4444',
     fontSize: '12px',
     cursor: 'pointer',
-    marginTop: '4px',
-    textDecoration: 'underline',
+    alignSelf: 'flex-start',
+    textDecoration: 'none',
+    fontWeight: 500,
   },
-
   drawerOverlay: {
     position: 'fixed',
     inset: 0,
-    background: 'rgba(0,0,0,0.3)',
-    zIndex: 50,
+    background: 'rgba(0,0,0,0.4)',
+    zIndex: 150,
     display: 'flex',
     justifyContent: 'flex-end',
-    transition: 'opacity 0.25s',
+    transition: 'opacity 0.25s ease-out',
   },
   drawer: {
     width: '100%',
@@ -784,12 +830,11 @@ const styles = {
     height: '100%',
     display: 'flex',
     flexDirection: 'column',
-    boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
-    transform: 'translateX(100%)',
-    transition: 'transform 0.25s cubic-bezier(0.4,0,0.2,1)',
+    boxShadow: '-4px 0 24px rgba(0,0,0,0.1)',
+    transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
   },
   drawerHeader: {
-    padding: '20px 24px',
+    padding: '18px 24px',
     borderBottom: '1px solid #E5E7EB',
     display: 'flex',
     justifyContent: 'space-between',
@@ -805,7 +850,7 @@ const styles = {
     padding: '16px 24px',
     borderTop: '1px solid #E5E7EB',
     display: 'flex',
-    gap: '8px',
+    gap: '12px',
     justifyContent: 'flex-end',
     background: '#F8FAFC',
   },
@@ -815,6 +860,7 @@ const styles = {
     fontSize: '20px',
     cursor: 'pointer',
     color: '#6B7280',
+    padding: '4px',
   },
   globalError: {
     background: '#FEF2F2',
@@ -825,45 +871,60 @@ const styles = {
     fontSize: '13px',
     border: '1px solid #FCA5A5',
   },
-
   dialogOverlay: {
     position: 'fixed',
     inset: 0,
-    background: 'rgba(0,0,0,0.4)',
-    zIndex: 60,
+    background: 'rgba(0,0,0,0.5)',
+    zIndex: 200,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '20px',
+    padding: '16px',
   },
   dialog: {
     background: '#fff',
-    borderRadius: '20px',
-    padding: '32px 24px 24px',
-    maxWidth: '400px',
+    borderRadius: '16px',
+    padding: '28px 24px',
+    maxWidth: '360px',
     width: '100%',
     textAlign: 'center',
-    boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
   },
   dialogIcon: {
-    fontSize: '40px',
-    marginBottom: '12px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '12px',
+    borderRadius: '50%',
+    background: '#FEF2F2',
     color: '#EF4444',
+    marginBottom: '16px',
   },
-
   toast: {
     position: 'fixed',
     bottom: '24px',
     left: '50%',
     transform: 'translateX(-50%)',
     color: '#fff',
-    padding: '12px 28px',
-    borderRadius: '12px',
+    padding: '12px 24px',
+    borderRadius: '10px',
     fontSize: '14px',
     fontWeight: 500,
-    zIndex: 70,
-    boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-    transition: 'opacity 0.3s, transform 0.3s',
-    opacity: 1,
+    zIndex: 250,
+    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+    textAlign: 'center',
+    maxWidth: '90%',
+    width: 'auto',
   },
+  tableAvatarFallback: {
+    width: 36,
+    height: 36,
+    borderRadius: '50%',
+    background: '#F3F4F6',
+    color: '#9CA3AF',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '14px',
+  }
 };
